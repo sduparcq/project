@@ -1,17 +1,15 @@
 # %% imports
-import pandas as pd
 import Context
 import DataAccesser
-from typing import List
-import importlib
-import numpy as np
+import DFManager
 
+import importlib
 
 importlib.reload(Context)
 importlib.reload(DataAccesser)
 
 
-# %% DATA LOADING
+# %% DATA LOADING / INSTANCIATING CLASSES ETC
 ref_dict = {
     "ADA": "",
     "AVAX": "",
@@ -28,49 +26,22 @@ for key in list(ref_dict.keys()):
 
 ctx = Context.Context(ref_dict=ref_dict)
 ax = DataAccesser.DataAccesser()
+
+
+
 df = ax.generate_data_frame(universe=ctx.universe)
 df_save = df.copy()
+symbols = list(ref_dict.keys())
 
+df_manager = DFManager.DFManager(data_df=df_save, symbols=symbols)
 
-# %% FEATURE ENG
-df = df['2023-01': '2025-09']
-symbols = df.columns
-n_udl = len(symbols)
+# %% PREPARING DF 
 
-period = 24 * 20 # periode de 20 jours
-
-for symbol in symbols:
-    df[f"{symbol}_momentum"] = df[symbol].pct_change(periods=period)
-
-
-def create_momentum(symbols: List[str], short: int, long: int):
-    for symbol in symbols:
-        df[f"{symbol}_momentum"] = df[symbol].rolling(short).mean() - df[symbol].rolling(long).mean()
-        df[f"{symbol}_momentum"] = (df[f"{symbol}_momentum"] - df[f"{symbol}_momentum"].mean()) / df[f"{symbol}_momentum"].std()
-
-create_momentum(
-    symbols=symbols,
-    short=20,
-    long=100
-)
-
-# %% ANALYSIS
-df.describe()
-
-def create_signal(symbols: List[str]):
-    for symbol in symbols:
-        df[f"{symbol}_signal"] = df[f"{symbol}_momentum"].apply(np.sign)
-
-create_signal(
-    symbols=symbols
-)
-
-df.head(-1)
-
-
-# %% BACKTEST
-
-
-
+df_manager.prepare_df()
+df_manager.data_df.head(-1)
+df_manager.data_df.columns
+# %%
+df_manager.gen_momentum(short=50, long=200)
+df_manager.momentum_signal(short=50, long=200)
 
 
